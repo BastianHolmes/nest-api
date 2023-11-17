@@ -1,27 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AppController } from '@app/app.controller';
-import { AppService } from '@app/app.service';
-import { TagModule } from '@app/tag/tag.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { getPostgresConfig } from './config/getPostgresConfig';
+import postgresConfig from './config/postgres.config';
+import globalConfig from './config/global.config';
 
 @Module({
   imports: [
-    TagModule,
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('POSTGRES_HOST'),
-        port: parseInt(configService.get('POSTGRES_PORT')),
-        username: configService.get('POSTGRES_USER'),
-        password: configService.get('POSTGRES_PASSWORD'),
-        database: configService.get('POSTGRES_DB_NAME'),
-        synchronize: true,
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      }),
-      inject: [ConfigService],
+    TypeOrmModule.forRootAsync(getPostgresConfig()),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [postgresConfig, globalConfig],
+      ignoreEnvFile: false,
+      envFilePath: ['config/.env'],
+      cache: true,
     }),
   ],
   controllers: [AppController],
